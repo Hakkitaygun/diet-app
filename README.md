@@ -463,6 +463,38 @@ C: Evet! Node, React, MongoDB, Gemini API'nin ücretsiz tiers var.
 
 ---
 
+## 🌐 Vercel ile Yayınlama
+
+Bu proje tam anlamıyla tek başına Vercel'e taşınmaz; Vercel sadece frontend'i yayınlamak için uygundur. Backend `server.js` ayrı bir Node host üzerinde çalışmalı ve frontend o backend adresini kullanmalıdır.
+
+### 1. Frontend'i Vercel'e bağla
+1. GitHub repo'yu Vercel'e import et.
+2. Root directory olarak repo kökünü bırak.
+3. Vercel otomatik olarak [vercel.json](vercel.json) dosyasını okuyacak.
+4. Build sonunda `frontend/build` klasörü yayınlanacak.
+
+### 2. Vercel ortam değişkeni ekle
+Vercel proje ayarlarında şu değişkeni tanımla:
+
+```env
+REACT_APP_API_URL=https://senin-backend-adresin.com
+```
+
+### 3. Backend'i ayrı deploy et
+`server.js` için ayrı bir servis kullan:
+- Render
+- Railway
+- Fly.io
+- Kendi VPS'in
+
+### 4. MongoDB'yi buluta taşı
+Yerel MongoDB yerine MongoDB Atlas free tier kullan.
+
+### 5. Kontrol et
+Frontend açılıyor mu, giriş yapıyor mu, API çağrıları canlı backend'e gidiyor mu test et.
+
+---
+
 ## 📚 Dosya Açıklamaları
 
 | Dosya | Açıklama |
