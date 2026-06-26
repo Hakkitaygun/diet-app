@@ -28,23 +28,6 @@ function defaultBirthDateFromAge(age) {
   return `${year}-${month}-${day}`;
 }
 
-const REMINDER_DAYS = [
-  { index: 0, label: 'Pazartesi' },
-  { index: 1, label: 'Sali' },
-  { index: 2, label: 'Carsamba' },
-  { index: 3, label: 'Persembe' },
-  { index: 4, label: 'Cuma' },
-  { index: 5, label: 'Cumartesi' },
-  { index: 6, label: 'Pazar' }
-];
-
-const REMINDER_MEALS = [
-  { key: 'breakfast', label: 'Kahvalti' },
-  { key: 'lunch', label: 'Ogle' },
-  { key: 'dinner', label: 'Aksam' },
-  { key: 'snack', label: 'Ara Ogun' }
-];
-
 // ============= AUTH PROVIDER =============
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -107,7 +90,11 @@ function StatsPage({ token }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = useCallback(async () => {
+  useEffect(() => {
+    fetchStats();
+  }, [token]);
+
+  const fetchStats = async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/logs/stats/monthly`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -121,11 +108,7 @@ function StatsPage({ token }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  };
 
   return (
     <div className="page-container">
@@ -185,7 +168,11 @@ function HistoryPage({ token }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHistory = useCallback(async () => {
+  useEffect(() => {
+    fetchHistory();
+  }, [token]);
+
+  const fetchHistory = async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/logs/food-history`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -199,11 +186,7 @@ function HistoryPage({ token }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  };
 
   const deleteFood = async (id) => {
     try {
@@ -271,7 +254,11 @@ function ExercisePage({ token }) {
   const [todayExercises, setTodayExercises] = useState(null);
   const [message, setMessage] = useState('');
 
-  const fetchTodayExercises = useCallback(async () => {
+  useEffect(() => {
+    fetchTodayExercises();
+  }, [token]);
+
+  const fetchTodayExercises = async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/logs/exercise/today`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -283,11 +270,7 @@ function ExercisePage({ token }) {
     } catch (err) {
       console.error('Error fetching exercises:', err);
     }
-  }, [token]);
-
-  useEffect(() => {
-    fetchTodayExercises();
-  }, [fetchTodayExercises]);
+  };
 
   const handleAddExercise = async () => {
     if (!activity.trim()) {
@@ -393,7 +376,11 @@ function FavoritesPage({ user, token }) {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchFavorites = useCallback(async () => {
+  useEffect(() => {
+    fetchFavorites();
+  }, [token]);
+
+  const fetchFavorites = async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/users/favorites`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -407,11 +394,7 @@ function FavoritesPage({ user, token }) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  useEffect(() => {
-    fetchFavorites();
-  }, [fetchFavorites]);
+  };
 
   const removeFavorite = async (foodName) => {
     try {
@@ -1070,6 +1053,7 @@ function FoodSearchPage({ user, token, onFoodAdded }) {
   const [speechConfirmation, setSpeechConfirmation] = useState(null);
   const [showManualBarcode, setShowManualBarcode] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
+  const [barcodeRetryCount, setBarcodeRetryCount] = useState(0);
   const recognitionRef = useRef(null);
   const shouldKeepListeningRef = useRef(false);
   const restartTimerRef = useRef(null);
@@ -1548,6 +1532,7 @@ function FoodSearchPage({ user, token, onFoodAdded }) {
       setIsScanning(true);
       setError('');
       scanHandledRef.current = false;
+      setBarcodeRetryCount(0);
 
       // Ensure scanner container is mounted in DOM before initializing camera
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -2715,18 +2700,35 @@ function WeeklyPlannerPage({ user, token }) {
     .map((id) => comparePlans[id])
     .filter(Boolean);
 
-  const buildDefaultGrid = useCallback(() => {
+  const days = [
+    { index: 0, label: 'Pazartesi' },
+    { index: 1, label: 'Sali' },
+    { index: 2, label: 'Carsamba' },
+    { index: 3, label: 'Persembe' },
+    { index: 4, label: 'Cuma' },
+    { index: 5, label: 'Cumartesi' },
+    { index: 6, label: 'Pazar' }
+  ];
+
+  const meals = [
+    { key: 'breakfast', label: 'Kahvalti' },
+    { key: 'lunch', label: 'Ogle' },
+    { key: 'dinner', label: 'Aksam' },
+    { key: 'snack', label: 'Ara Ogun' }
+  ];
+
+  const buildDefaultGrid = () => {
     const grid = {};
-    REMINDER_DAYS.forEach((day) => {
+    days.forEach((day) => {
       grid[day.index] = {};
-      REMINDER_MEALS.forEach((meal) => {
+      meals.forEach((meal) => {
         grid[day.index][meal.key] = { time: '', enabled: false };
       });
     });
     return grid;
-  }, []);
+  };
 
-  const mapRemindersToGrid = useCallback((reminders) => {
+  const mapRemindersToGrid = (reminders) => {
     const grid = buildDefaultGrid();
     (reminders || []).forEach((item) => {
       if (!grid[item.dayIndex] || !grid[item.dayIndex][item.mealType]) return;
@@ -2736,11 +2738,11 @@ function WeeklyPlannerPage({ user, token }) {
       };
     });
     return grid;
-  }, [buildDefaultGrid]);
+  };
 
   useEffect(() => {
     setReminderGrid(buildDefaultGrid());
-  }, [buildDefaultGrid]);
+  }, []);
 
   useEffect(() => {
     const fetchReminders = async () => {
@@ -2760,7 +2762,7 @@ function WeeklyPlannerPage({ user, token }) {
     if (token) {
       fetchReminders();
     }
-  }, [token, mapRemindersToGrid]);
+  }, [token]);
 
   const updateReminderCell = (dayIndex, mealKey, updates) => {
     setReminderGrid((prev) => ({
@@ -2779,8 +2781,8 @@ function WeeklyPlannerPage({ user, token }) {
     try {
       setReminderSaving(true);
       const reminders = [];
-      REMINDER_DAYS.forEach((day) => {
-        REMINDER_MEALS.forEach((meal) => {
+      days.forEach((day) => {
+        meals.forEach((meal) => {
           const cell = reminderGrid?.[day.index]?.[meal.key];
           if (!cell?.time || !cell.enabled) return;
           reminders.push({
@@ -3091,11 +3093,11 @@ function WeeklyPlannerPage({ user, token }) {
           Gun ve ogun bazli saatleri ayarlayin. Bildirimler tarayici kapaliyken de gelebilir.
         </p>
         <div style={{ display: 'grid', gap: '10px' }}>
-          {REMINDER_DAYS.map((day) => (
+          {days.map((day) => (
             <div key={day.index} style={{ backgroundColor: 'var(--input-bg)', padding: '12px', borderRadius: '8px' }}>
               <strong>{day.label}</strong>
               <div style={{ display: 'grid', gap: '8px', marginTop: '10px' }}>
-                {REMINDER_MEALS.map((meal) => {
+                {meals.map((meal) => {
                   const cell = reminderGrid?.[day.index]?.[meal.key] || { time: '', enabled: false };
                   return (
                     <div key={meal.key} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 80px', gap: '10px', alignItems: 'center' }}>
@@ -3271,7 +3273,32 @@ function SettingsPage({ user, token, onLogout }) {
     }
   }, []);
 
-  const triggerReminder = useCallback(async (rem) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // schedule reminders whenever they change
+    Object.values(timersRef.current).forEach(id => clearTimeout(id));
+    timersRef.current = {};
+
+    reminders.forEach((rem, idx) => {
+      const now = new Date();
+      const [hh, mm] = rem.time.split(':').map(Number);
+      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      const diff = next.getTime() - now.getTime();
+      const id = setTimeout(() => {
+        triggerReminder(rem);
+        // reschedule next occurrence in 24h
+        timersRef.current[rem.id] = setInterval(() => triggerReminder(rem), 24 * 60 * 60 * 1000);
+      }, diff);
+      timersRef.current[rem.id] = id;
+    });
+
+    return () => {
+      Object.values(timersRef.current).forEach(id => clearTimeout(id));
+    };
+  }, [reminders]);
+
+  const triggerReminder = async (rem) => {
     // Try Push API first (persistent)
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       try {
@@ -3304,31 +3331,7 @@ function SettingsPage({ user, token, onLogout }) {
     } else {
       alert(`${rem.label} - ${rem.time}`);
     }
-  }, [token]);
-
-  useEffect(() => {
-    // schedule reminders whenever they change
-    Object.values(timersRef.current).forEach(id => clearTimeout(id));
-    timersRef.current = {};
-
-    reminders.forEach((rem) => {
-      const now = new Date();
-      const [hh, mm] = rem.time.split(':').map(Number);
-      const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
-      if (next <= now) next.setDate(next.getDate() + 1);
-      const diff = next.getTime() - now.getTime();
-      const id = setTimeout(() => {
-        triggerReminder(rem);
-        // reschedule next occurrence in 24h
-        timersRef.current[rem.id] = setInterval(() => triggerReminder(rem), 24 * 60 * 60 * 1000);
-      }, diff);
-      timersRef.current[rem.id] = id;
-    });
-
-    return () => {
-      Object.values(timersRef.current).forEach(id => clearTimeout(id));
-    };
-  }, [reminders, triggerReminder]);
+  };
 
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) return alert('Tarayıcınız bildirimleri desteklemiyor');

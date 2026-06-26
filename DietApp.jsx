@@ -311,6 +311,8 @@ function ProfilePage({ user, token, onProfileUpdate }) {
 function DashboardPage({ user, token }) {
   const [todayLog, setTodayLog] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [waterIntake, setWaterIntake] = useState(0); // ml
+  const waterGoal = 2000; // 2 litre
 
   useEffect(() => {
     fetchTodayLog();
@@ -324,11 +326,33 @@ function DashboardPage({ user, token }) {
       if (res.ok) {
         const data = await res.json();
         setTodayLog(data);
+        setWaterIntake(data.waterIntake || 0);
       }
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateWater = async (newIntake) => {
+    const clampedIntake = Math.max(0, newIntake);
+    const originalIntake = waterIntake;
+    setWaterIntake(clampedIntake);
+
+    try {
+      // Bu, backend'de oluşturulması gereken yeni bir endpoint'tir.
+      await fetch(`${process.env.REACT_APP_API_URL}/logs/water`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ water: clampedIntake })
+      });
+    } catch (err) {
+      console.error('Su takibi güncellenemedi', err);
+      setWaterIntake(originalIntake); // Hata durumunda eski değere dön
     }
   };
 
@@ -340,7 +364,12 @@ function DashboardPage({ user, token }) {
     ) * (profile.activityLevel || 1.5)
   );
 
-  const calorieTarget = profile.goal === 'lose' ? Math.round(tdee * 0.85) : tdee;
+  let calorieTarget = tdee;
+  if (profile.goal === 'lose') {
+    calorieTarget = Math.round(tdee * 0.85);
+  } else if (profile.goal === 'gain') {
+    calorieTarget = Math.round(tdee * 1.15);
+  }
   const totalCalories = todayLog?.foods?.reduce((sum, f) => sum + (f.calories || 0), 0) || 0;
   const remaining = calorieTarget - totalCalories;
 
@@ -374,6 +403,24 @@ function DashboardPage({ user, token }) {
 
       <div className="progress-bar">
         <div className="progress-fill" style={{width: `${Math.min(100, (totalCalories / calorieTarget) * 100)}%`}}></div>
+      </div>
+
+      <div className="water-tracker-container">
+        <div className="water-header">
+          <h3>💧 Su Takibi</h3>
+          <span>{waterIntake} / {waterGoal} ml</span>
+        </div>
+        <div className="water-glasses">
+          {[...Array(8)].map((_, i) => {
+            const isFilled = (i + 1) * 250 <= waterIntake;
+            return <div key={i} className={`glass ${isFilled ? 'filled' : ''}`}></div>;
+          })}
+        </div>
+        <div className="water-buttons">
+          <button onClick={() => handleUpdateWater(waterIntake + 250)}>+1 Bardak (250ml)</button>
+          <button onClick={() => handleUpdateWater(waterIntake + 500)}>+1 Şişe (500ml)</button>
+          <button className="reset-btn" onClick={() => handleUpdateWater(0)}>Sıfırla</button>
+        </div>
       </div>
 
       <h2>Günün Yemekleri</h2>

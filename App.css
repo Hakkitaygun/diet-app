@@ -595,3 +595,92 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== SU TAKIBI (WATER TRACKER) ===== */
+.water-tracker-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 2rem 0;
+  animation: fadeIn 0.5s ease;
+}
+
+.water-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.water-header h3 {
+  color: #3498db;
+  font-size: 20px;
+}
+
+.water-header span {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+.water-glasses {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.glass {
+  width: 40px;
+  height: 60px;
+  border: 3px solid #aed6f1; /* Boş bardak için daha açık mavi */
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  position: relative;
+  background: #f0f8ff;
+  transition: all 0.4s ease;
+}
+
+.glass.filled {
+  background: linear-gradient(to top, #3498db 100%, #f0f8ff 100%);
+  border-color: #3498db; /* Dolu bardak için koyu mavi */
+}
+
+.water-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.water-buttons button {
+  background: #eaf5ff;
+  border: 1px solid #3498db;
+  color: #3498db;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.water-buttons button:hover:not(:disabled) {
+  background: #3498db;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.water-buttons button.reset-btn {
+  background: #fef2f2; /* Daha açık kırmızı */
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.water-buttons button.reset-btn:hover:not(:disabled) {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
