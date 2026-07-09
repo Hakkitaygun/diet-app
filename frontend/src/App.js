@@ -6,6 +6,48 @@ import './App.css';
 // ============= CONTEXT =============
 const AuthContext = React.createContext();
 
+const PROD_API_URL = 'https://diet-app-1-is1b.onrender.com';
+const LOCALHOST_API_REGEX = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
+
+function normalizeBaseUrl(url) {
+  return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveApiBaseUrl() {
+  const configured = normalizeBaseUrl(process.env.REACT_APP_API_URL);
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isLocalDev = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  if (!configured) {
+    return isLocalDev ? 'http://localhost:5000' : PROD_API_URL;
+  }
+
+  if (!isLocalDev && LOCALHOST_API_REGEX.test(configured)) {
+    return PROD_API_URL;
+  }
+
+  return configured;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+if (
+  typeof window !== 'undefined' &&
+  typeof window.fetch === 'function' &&
+  !window.__dietAppFetchPatched
+) {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    if (typeof input === 'string' && LOCALHOST_API_REGEX.test(input)) {
+      const rewrittenUrl = input.replace(LOCALHOST_API_REGEX, API_BASE_URL);
+      return originalFetch(rewrittenUrl, init);
+    }
+
+    return originalFetch(input, init);
+  };
+  window.__dietAppFetchPatched = true;
+}
+
 function calculateAgeFromBirthDate(birthDate) {
   if (!birthDate) return null;
   const date = new Date(birthDate);

@@ -640,6 +640,18 @@ async function analyzeFoodWithGemini(foodDescription) {
     throw new Error('GEMINI_API_KEY ayarlanmamış');
   }
 
+  const endpointCandidates = [
+    { apiVersion: GEMINI_API_VERSION, model: GEMINI_MODEL },
+    { apiVersion: 'v1beta', model: GEMINI_MODEL },
+    { apiVersion: 'v1beta', model: 'gemini-1.5-flash' }
+  ].filter(
+    (candidate, index, arr) =>
+      arr.findIndex(
+        (item) =>
+          item.apiVersion === candidate.apiVersion && item.model === candidate.model
+      ) === index
+  );
+
   const prompt = `
 Sen uzman bir Turk diyetisyensin. Kullanici net gramaj, adet veya "restoran" belirtmedikce her zaman standart ev yapimi, az yagli, tek kisilik ortalama porsiyon baz al.
 Asla porsiyonu buyutme. Varsayim yaptiginda baz alinan miktari acik yaz.
@@ -680,28 +692,56 @@ Yanıt formati:
 `;
 
   try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent`,
-      {
-        contents: [
+    let response;
+    let lastError = null;
+
+    for (const candidate of endpointCandidates) {
+      try {
+        response = await axios.post(
+          `https://generativelanguage.googleapis.com/${candidate.apiVersion}/models/${candidate.model}:generateContent`,
           {
-            parts: [
+            contents: [
               {
-                text: prompt
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
               }
-            ]
+            ],
+            generationConfig: {
+              temperature: 0.2
+            }
+          },
+          {
+            headers: {
+              'x-goog-api-key': GEMINI_API_KEY
+            }
           }
-        ],
-        generationConfig: {
-          temperature: 0.2
+        );
+
+        if (
+          candidate.apiVersion !== GEMINI_API_VERSION ||
+          candidate.model !== GEMINI_MODEL
+        ) {
+          console.warn(
+            `Gemini fallback kullanildi: ${candidate.apiVersion}/${candidate.model}`
+          );
         }
-      },
-      {
-        headers: {
-          'x-goog-api-key': GEMINI_API_KEY
+        break;
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        if (status === 404) {
+          continue;
         }
+        throw error;
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error('Gemini API yanit vermedi');
+    }
 
     const responseText = response.data.candidates[0].content.parts[0].text;
     
